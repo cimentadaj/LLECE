@@ -1,34 +1,44 @@
-library(haven)
-library(data.table)
 library(dplyr)
+library(readr)
 ###### Reading and merging third grade data #######
 
 direc <- "/Users/cimentadaj/Downloads/Factores asociados/Texto/"
-direc2 <- "/Users/cimentadaj/Downloads/Logro de aprendizaje/Bases de datos texto/"
-files <- c("QA3.csv", "QD3.csv", "QF3.csv", "QP3L.csv", "QP3M.csv", "QA6.csv", "QD6.csv", "QF6.csv", "QP6L.csv", "QP6M.csv", "QP6C.csv")
-files2 <- c("PL3_all_TERCE.csv", "PM3_all_TERCE.csv", "PL6_all_TERCE.csv", "PM6_all_TERCE.csv", "PC6_all_TERCE.csv")
-vecnames <- c("student3", "director3", "family3", "lteacher3", "mteacher3", "student6", "director6", "family6", "lteacher6", "mteacher6", "steacher6")
-vecnames2 <- c("language3", "math3", "language6", "math6", "science6")
+direc1 <- "/Users/cimentadaj/Downloads/Logro de aprendizaje/"
 
-path <- paste0(direc, files) # All 3rd and 6th grader files without the exam scores
-path2 <- paste0(direc2, files2) # All 3rd and 6th grader files for exam scores
+unzip(paste0(direc1, "Resultados texto.zip"), exdir = paste0(direc1))
 
-first_b <- Map(function(x, y) assign(x, fread(y, header = T, sep = ";")), vecnames, path)
-second_b <- Map(function(x, y) assign(x, fread(y, header = T, sep = ",")), vecnames2, path2)
+direc2 <- paste0(direc1, "Bases de datos texto/")
 
-all_dat <- append(first_b, second_b)
-all_dat <- lapply(all_dat, function(x) { names(x) <- tolower(names(x)); x})
-all_dat <- lapply(all_dat, as.data.frame)
-
-secondl <- c("director3", "lteacher3", "mteacher3", "director6", "lteacher6", "mteacher6", "steacher6")
-
-for (i in names(all_dat)) {
-    all_dat[[i]]$oID <- paste0(all_dat[[i]]$idcntry, all_dat[[i]]$idschool)
-    all_dat[[i]]$sID <- paste0(all_dat[[i]]$idcntry, all_dat[[i]]$idstud)
+for (i in list.files(direc, pattern = "*.csv")) {
+  write_csv(empty <- read_delim(paste0(direc, i), delim = ";", col_names = T), path = paste0(direc, i))
 }
+rm(empty)
 
-all_dat3 <- all_dat[grep("3", names(all_dat))]
-all_dat6 <- all_dat[grep("6", names(all_dat))]
+files3 <- c("QA3.csv", "QD3.csv", "QF3.csv", "QP3L.csv", "QP3M.csv", "PL3_all_TERCE.csv", "PM3_all_TERCE.csv")
+all3 <- paste0(direc, files3[1:(length(files3) - 2)])
+all3 <- c(all3, paste0(direc2, files3[(length(files3) - 1):length(files3)]))
+
+files6 <- c("QA6.csv", "QD6.csv", "QF6.csv", "QP6L.csv", "QP6M.csv", "QP6C.csv", "PL6_all_TERCE.csv", "PM6_all_TERCE.csv", "PC6_all_TERCE.csv")
+all6 <- paste0(direc, files6[1:(length(files6) - 3)])
+all6 <- c(all6, paste0(direc2, files6[(length(files6) - 2):length(files6)]))
+
+vecname3 <- paste0(c("student", "director", "family", "lteacher", "mteacher", "language", "math"), "3")
+vecname6 <- paste0(c("student", "director", "family", "lteacher", "mteacher", "steacher", "language", "math", "science"), "6")
+
+all_dat <- list(third = list(), sixth = list())
+all_dat[[1]] <- Map(function(x, y) assign(x, read_csv(y, col_names = T)), vecname3, all3)
+all_dat[[2]] <- Map(function(x, y) assign(x, read_csv(y, col_names = T)), vecname6, all6)
+
+
+all_dat <- lapply(all_dat, function(x) lapply(x, function(p) {names(p) <- tolower(names(p)); p}))
+all_dat <- lapply(all_dat, function(x) lapply(x, as.data.frame))
+
+
+all_dat2 <- lapply(all_dat, function(x) lapply(x, function(p) {
+  p$oID <- paste0(p$idcntry, p$idschool)
+  p$sID <- paste0(p$idcntry, p$idstud)
+  p
+}))
 
 # Function updates the names of vector nam with the suffix char, excluding the elements
 # excp
@@ -39,7 +49,7 @@ namer <- function(nam, char, excp) {
 }
 
 merger <- function(list_file, suffix) {
-
+  
   # Function loops over data frame all_data and suffix and changes the names of each dataframe
   # excluding names oID and sID
   all_data2 <- Map(function(x, y) setNames(x, namer(names(x), y, c("oID", "sID"))), list_file, suffix)
@@ -56,14 +66,16 @@ merger <- function(list_file, suffix) {
   all_data2
 }
 
-all_data4 <- merger(all_dat3,
+all_data4 <- merger(all_dat2[[1]],
                     suffix = c("_student", "_director", "_family",
                                "_lteacher", "_mteacher", "_language",
                                "_math"))
 
-all_data6 <- merger(all_dat6,
+all_data6 <- merger(all_dat2[[2]],
                     suffix = c("_student", "_director", "_family",
                                "_lteacher", "_mteacher", "_steacher",
                                "_language", "_math", "_science"))
 
 all_data <- full_join(all_data4, all_data6)
+
+rm(list = ls()[!(ls() %in% "all_data")])
