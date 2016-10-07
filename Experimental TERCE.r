@@ -5,15 +5,14 @@ library(readr)
 direc <- "/Users/cimentadaj/Downloads/Factores asociados/Texto/"
 direc1 <- "/Users/cimentadaj/Downloads/Logro de aprendizaje/"
 
-unzip(paste0(direc1, "Resultados texto.zip"), exdir = paste0(direc1))
+# unzip(paste0(direc1, "Resultados texto.zip"), exdir = paste0(direc1))
 
 direc2 <- paste0(direc1, "Bases de datos texto/")
 
-for (i in list.files(direc, pattern = "*.csv")) {
-  print(i)
-  write_csv(empty <- read_delim(paste0(direc, i), delim = ";", col_names = T), path = paste0(direc, i))
-}
-rm(empty)
+# for (i in list.files(direc, pattern = "*.csv")) {
+#   write_csv(empty <- read_delim(paste0(direc, i), delim = ";", col_names = T), path = paste0(direc, i))
+# }
+# rm(empty)
 
 files3 <- c("QA3.csv", "QD3.csv", "QF3.csv", "QP3L.csv", "QP3M.csv", "PL3_all_TERCE.csv", "PM3_all_TERCE.csv")
 all3 <- paste0(direc, files3[1:(length(files3) - 2)])
@@ -66,34 +65,56 @@ namer <- function(nam, char, excp) {
   nam
 }
 
-merger <- function(list_file, suffix) {
-  
-  # Function loops over data frame all_data and suffix and changes the names of each dataframe
-  # excluding names oID and sID
-  all_data2 <- Map(function(x, y) setNames(x, namer(names(x), y, c("oID", "sID"))), list_file, suffix)
-  
-  # Function merges every element of the list
-  all_data2 <- Reduce(function(x, y) base::merge(x, y, by = c("sID", "oID"), all = T), all_data2)
-  
-  cols <- lapply(all_data2$sID, substring, c(1, 4, 8, 10), c(3, 7, 9, 12))
-  
-  cols2 <- data.frame(do.call(rbind, cols))
-  names(cols2) <- c("cntry", "school", "class", "student")
-  
-  all_data2 <- as.data.frame(append(all_data2, cols2, after = 0))
-  all_data2
+grep2_pattern <- function(p1, p2, vec, actual = T) {
+  first <- grepl(p1, vec)
+  second <- grepl(p2, vec)
+  if (actual) vec[as.logical(first + second)]
+  else vec[!as.logical(first + second)]
 }
 
-all_data4 <- merger(all_dat2[[1]],
-                    suffix = c("_student", "_director", "_family",
-                               "_lteacher", "_mteacher", "_language",
-                               "_math"))
+merger <- function(dat, suffix) {
+  
+  all_data2 <- Map(function(x, y) setNames(x, namer(names(x), y, c("oID", "sID"))), dat, suffix)
+  # Function merges every element of the list
+  teach_dir <- all_data2[grep2_pattern("director","teacher", names(all_data2))]
+  teach_dir_merge <- Reduce(function(x, y) inner_join(x, y, by = c("oID")), teach_dir)
 
-all_data6 <- merger(all_dat2[[2]],
-                    suffix = c("_student", "_director", "_family",
-                               "_lteacher", "_mteacher", "_steacher",
-                               "_language", "_math", "_science"))
+  print("yes")
+  
+  # Function merges every element of the list
+  student2 <- all_data2[grep2_pattern("director","teacher", names(all_data2), actual = F)]
+  student2_merge <- Reduce(function(x, y) inner_join(x, y, by = c("sID")), student2)
+  
+  print("yes")
+  
+  
+  all <- inner_join(student2_merge, teach_dir_merge, by = c("oID.x" = "oID"))
+  print("yes")
+  
+  all
+}
+
+all_data4 <- merger(all_dat2[[1]], suffix = c("_student", "_director", "_family",
+                                              "_lteacher", "_mteacher", "_language",
+                                              "_math"))
+
+all_data6 <- merger(all_dat2[[2]], suffix = c("_student", "_director", "_family",
+                                              "_lteacher", "_mteacher", "_steacher",
+                                              "_language", "_math", "_science"))
 
 all_data <- full_join(all_data4, all_data6)
 
-rm(list = ls()[!(ls() %in% "all_data")])
+setmove <- function(df, columns) {
+  df[, c(columns, setdiff(names(df), columns))]
+}
+
+all_data$sID <- all_data$idst_student
+all_data$oID <- all_data$idsc_student
+all_data$country <- all_data$country_student
+all_data$dependencia <- all_data$dependencia_student
+all_data$ruralidad <- all_data$ruralidad_student
+all_data$genero <- all_data$genero_student
+all_data$idgrade <- all_data$idgrade_student
+
+
+all_data2 <- setmove(all_data, c("sID", "oID", "country", "dependencia", "ruralidad", "genero", "idgrade"))
