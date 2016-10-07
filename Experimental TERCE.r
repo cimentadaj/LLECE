@@ -114,3 +114,5 @@ all_data$idgrade <- all_data$idgrade_student
 
 
 all_data2 <- setmove(all_data, c("sID", "oID", "country", "dependencia", "ruralidad", "genero", "idgrade"))
+
+rm(list = ls()[!(ls() %in% "all_data2")])
