@@ -10,7 +10,6 @@ unzip(paste0(direc1, "Resultados texto.zip"), exdir = paste0(direc1))
 direc2 <- paste0(direc1, "Bases de datos texto/")
 
 for (i in list.files(direc, pattern = "*.csv")) {
-  print(i)
   write_csv(empty <- read_delim(paste0(direc, i), delim = ";", col_names = T), path = paste0(direc, i))
 }
 rm(empty)
