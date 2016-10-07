@@ -74,11 +74,13 @@ grep2_pattern <- function(p1, p2, vec, actual = T) {
 
 merger <- function(dat, suffix) {
   
-  df <- Map(function(x, y) setNames(x, namer(names(x), y, c("oID", "sID"))), dat, suffix)
+  # Here I set all names of each data frame to the suffix name. The suffix needs to be the same length as dat
+  df <- Map(function(x, y) { names(x) <- paste0(names(x), y); x },  dat, suffix)
   # Function merges every element of the list
   teach_dir <- df[grep2_pattern("director","teacher", names(df))]
-  teach_dir_merge <- Reduce(function(x, y) inner_join(x, y, by = c("oID")), teach_dir)
-  
+  teach_dir_merge <- Reduce(function(x, y) inner_join(x, y, by = c(grep("oID", names(x), value = T) = grep("oID", names(y), value = T))), teach_dir)
+  # Here I'm trying to pass the key columns interactively be searching for oID in each dataframe and matching on that
+  # variable. There's an error up to now that doesn't allow to name a character vector with a column name.
   # Function merges every element of the list
   student2 <- df[grep2_pattern("director","teacher", names(df), actual = F)]
   student2_merge <- Reduce(function(x, y) inner_join(x, y, by = c("sID")), student2)
