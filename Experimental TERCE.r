@@ -25,13 +25,13 @@ all6 <- c(all6, paste0(direc2, files6[(length(files6) - 2):length(files6)]))
 vecname3 <- paste0(c("student", "director", "family", "lteacher", "mteacher", "language", "math"), "3")
 vecname6 <- paste0(c("student", "director", "family", "lteacher", "mteacher", "steacher", "language", "math", "science"), "6")
 
-all_dat <- list(third = list(), sixth = list())
-all_dat[[1]] <- Map(function(x, y) assign(x, read_csv(y, col_names = T)), vecname3, all3)
-all_dat[[2]] <- Map(function(x, y) assign(x, read_csv(y, col_names = T)), vecname6, all6)
+data_compiled <- list(third = list(), sixth = list())
+data_compiled[[1]] <- Map(function(x, y) assign(x, read_csv(y, col_names = T)), vecname3, all3)
+data_compiled[[2]] <- Map(function(x, y) assign(x, read_csv(y, col_names = T)), vecname6, all6)
 
 
-all_dat <- lapply(all_dat, function(x) lapply(x, function(p) {names(p) <- tolower(names(p)); p}))
-all_dat <- lapply(all_dat, function(x) lapply(x, as.data.frame))
+data_compiled <- lapply(data_compiled, function(x) lapply(x, function(p) {names(p) <- tolower(names(p)); p}))
+data_compiled <- lapply(data_compiled, function(x) lapply(x, as.data.frame))
 
 finder <- c("32" = "ARG",
             "76" = "BRA",
@@ -50,7 +50,7 @@ finder <- c("32" = "ARG",
             "858" = "URU",
             "4841" = "NLE")
 
-all_dat2 <- lapply(all_dat, function(x) lapply(x, function(p) {
+data_compiled2 <- lapply(data_compiled, function(x) lapply(x, function(p) {
   p$country <- finder[as.character(p$idcntry)]
   p$sID <- paste0(p$country, p$idstud)
   p$oID <- paste0(p$country, p$idschool)
@@ -74,35 +74,29 @@ grep2_pattern <- function(p1, p2, vec, actual = T) {
 
 merger <- function(dat, suffix) {
   
-  all_data2 <- Map(function(x, y) setNames(x, namer(names(x), y, c("oID", "sID"))), dat, suffix)
+  df <- Map(function(x, y) setNames(x, namer(names(x), y, c("oID", "sID"))), dat, suffix)
   # Function merges every element of the list
-  teach_dir <- all_data2[grep2_pattern("director","teacher", names(all_data2))]
+  teach_dir <- df[grep2_pattern("director","teacher", names(df))]
   teach_dir_merge <- Reduce(function(x, y) inner_join(x, y, by = c("oID")), teach_dir)
-
-  print("yes")
   
   # Function merges every element of the list
-  student2 <- all_data2[grep2_pattern("director","teacher", names(all_data2), actual = F)]
+  student2 <- df[grep2_pattern("director","teacher", names(df), actual = F)]
   student2_merge <- Reduce(function(x, y) inner_join(x, y, by = c("sID")), student2)
   
-  print("yes")
-  
-  
   all <- inner_join(student2_merge, teach_dir_merge, by = c("oID.x" = "oID"))
-  print("yes")
   
   all
 }
 
-all_data4 <- merger(all_dat2[[1]], suffix = c("_student", "_director", "_family",
+three <- merger(data_compiled2[[1]], suffix = c("_student", "_director", "_family",
                                               "_lteacher", "_mteacher", "_language",
                                               "_math"))
 
-all_data6 <- merger(all_dat2[[2]], suffix = c("_student", "_director", "_family",
+six <- merger(data_compiled2[[2]], suffix = c("_student", "_director", "_family",
                                               "_lteacher", "_mteacher", "_steacher",
                                               "_language", "_math", "_science"))
 
-all_data <- full_join(all_data4, all_data6)
+all_data <- full_join(three, six)
 
 setmove <- function(df, columns) {
   df[, c(columns, setdiff(names(df), columns))]
