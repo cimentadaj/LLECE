@@ -77,13 +77,13 @@ merger <- function(dat, suffix) {
   df <- Map(function(x, y) setNames(x, namer(names(x), y, c("oID", "sID"))), dat, suffix)
   # Function merges every element of the list
   teach_dir <- df[grep2_pattern("director","teacher", names(df))]
-  teach_dir_merge <- Reduce(function(x, y) inner_join(x, y, by = c("oID")), teach_dir)
+  teach_dir_merge <- Reduce(function(x, y) full_join(x, y, by = c("oID")), teach_dir)
   
   # Function merges every element of the list
   student2 <- df[grep2_pattern("director","teacher", names(df), actual = F)]
-  student2_merge <- Reduce(function(x, y) inner_join(x, y, by = c("sID")), student2)
+  student2_merge <- Reduce(function(x, y) full_join(x, y, by = c("sID")), student2)
   
-  all <- inner_join(student2_merge, teach_dir_merge, by = c("oID.x" = "oID"))
+  all <- full_join(student2_merge, teach_dir_merge, by = c("oID.x" = "oID"))
   
   all
 }
@@ -115,4 +115,4 @@ all_data2 <- setmove(all_data, c("sID", "oID", "country", "dependencia", "rurali
 
 rm(list = ls()[!(ls() %in% "all_data2")])
                            
-                           
+                        
