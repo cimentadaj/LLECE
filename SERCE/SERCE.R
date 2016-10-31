@@ -1,5 +1,5 @@
 library(tidyverse)
-library(downloader)
+
 
 
 # SET WORKING DIRECTORY HERE WHERE FILES WILL BE (IN CASE THEY MUST BE DOWNLOADED)
@@ -7,23 +7,14 @@ library(downloader)
 
 setwd("/Users/cimentadaj/Downloads/serce")
 
-# If the file hasn't been unzipped, then download and unzip it.
-if (!("SERCE" %in% list.files(getwd()))) {
-  # Names of zip file and download path
-  zip_file <- "bcf362e6.zip"
-  download_url <- "http://www.unesco.org/new/fileadmin/MULTIMEDIA/FIELD/Santiago/zip/"
-  
-  # Create temporary directory and temporary file path
-  temp <- tempdir()
-  dir_file <- paste0(temp, "/", zip_file)
+github_fun <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/Functions/downloader_file.R"
+source_url(github_fun,
+           sha = sha_url(github_fun))
 
-  # Download file and save in temporary file
-  download(paste0(download_url, zip_file), dir_file)
-  
-  # unzip in working directory
-  unzip(dir_file)
-  rm(temp)
-}
+downloader_file("bcf362e6.zip",
+                "http://www.unesco.org/new/fileadmin/MULTIMEDIA/FIELD/Santiago/zip/",
+                "SERCE",
+                getwd())
 
 data_dir <- paste0(getwd(), "/SERCE/")
 
