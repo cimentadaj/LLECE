@@ -43,6 +43,6 @@ all_data <- lapply(all_data, function(p) {
   p
 })
 
-all_data2 <- Reduce(function(x, y) full_join(x, y), all_data)
-
+perce <- Reduce(function(x, y) full_join(x, y), all_data)
+rm(list = ls()[!(ls() %in% c("perce"))])
 
