@@ -17,9 +17,9 @@ downloader_file("e6e641d8.zip",
 
 data_dir <- paste0(getwd(), "/PERCE")
 
-if (!("PERCE" %in% list.files(data_dir))) {
-  # Unrar file
-}
+# if (!("PERCE" %in% list.files(data_dir))) {
+#  # Unrar file
+# }
 
 data_dir_upd <- paste0(data_dir, "/PERCE/")
 data_files <- list.files(data_dir_upd)
