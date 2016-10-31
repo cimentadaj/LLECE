@@ -211,7 +211,7 @@ all_data$genero <- all_data$genero_student
 all_data$idgrade <- all_data$idgrade_student
            
            
-terce <- setmove(all_data, c("sID",
+all_data2 <- setmove(all_data, c("sID",
                              "oID",
                              "country",
                              "dependencia",
