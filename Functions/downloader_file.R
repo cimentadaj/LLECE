@@ -9,7 +9,7 @@
 
 downloader_file <- function(zipfile, url, string, dir) {
   require(downloader)
-  if (!(zipfile %in% list.files(dir))) {
+  if (!(string %in% list.files(dir))) {
     # Names of zip file and download path
     zip_file <- zipfile
     download_url <- url
