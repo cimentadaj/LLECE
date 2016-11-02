@@ -6,6 +6,7 @@
 
 # rarfile = exact path to the rar file
 # exdir = directory to be extracted
+# password = password of the rar file
 
 unrar <- function(rarfile, exdir, password = NULL) {
   call <- paste("cd", exdir,"\n", "unrar x", rarfile, sep = " ")
