@@ -6,8 +6,22 @@
 
 # rarfile = exact path to the rar file
 # exdir = directory to be extracted
+# password = password of the rar file
 
-unrar <- function(rarfile, exdir) {
-  call <- paste("cd", exdir,"\n", "unrar x", rarfile, sep = " ")
-  system(call)
+unrar <- function(rarfile, exdir, password = NULL) {
+  # If the password is empty, return nothing, if it's not
+  # return the password with the unrar argument for password
+  # all wrapped in quotes
+  pw <- ifelse(!is.null(password), shQuote(paste0("-p", password)), "")
+  
+  # Quote all strings
+  rarfile <- shQuote(rarfile)
+  exdir <- shQuote(exdir)
+  
+  # combine everything into a single call:
+  # first the command, second the rar path, then the extract
+  # path and final the password. Note that if the password
+  # is NULL it won't affect the call. If it's not NULL
+  # then it will open the rar file.
+  system2("unrar", c(paste("x", rarfile, sep = " "), exdir, pw))
 }
