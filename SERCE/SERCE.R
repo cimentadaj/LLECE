@@ -61,6 +61,46 @@ if (!(any(unrar_name))) {
 # if the first file was unrared manually, the program assumes that
 # all other files within that file have been unrared as well.
 
-all_data <- vector("list", )
-read_spss()
+
+# New path for the unrared folder  
+new_path <- paste0(data_dir, grep("Bases pa", list.files(data_dir), value = T), "/")
+
+# All files within that folder
+fls_path <- list.files(new_path)
+# Obtain only the file names without a '.' in their names, so only the folders
+folder_names <- fls_path[!grepl("\\.", fls_path)]
+
+# Create a path for each of these new folders
+folder_path <- paste0(new_path, folder_names, "/")
+
+# Create empty list where data sets paths will be stored
+all_data <- vector("list", 3) # why 3? because we'll group third and 6th graders
+all_paths <- vector("list", 3)# and director data separately. This is HIGHLY
+                              # unlikely to change in the future as they won't 
+                              # add anymore 'surveys'.
+
+# All paths
+paths <- lapply(folder_path, function(x) paste0(x, list.files(x, "*.sav")))
+all_paths_vec <- do.call(`c`, paths)
+
+all_paths[[1]] <- grep("[[:alpha:]]{1,}3", all_paths_vec, value = T)
+all_paths[[2]] <- grep("[[:alpha:]]{1,}6", all_paths_vec, value = T)
+all_paths[[3]] <- setdiff(all_paths_vec, c(all_paths[[1]], all_paths[[2]]))
+
+all_data <- lapply(all_paths, function(x) lapply(x, read_spss))
+
+
+
+t <- list(all_data[[1]][[1]], all_data[[1]][[2]], all_data[[1]][[3]], all_data[[1]][[4]])
+p <- Reduce(function(x, y) full_join(x, y, by = "id_alumno"), t)
+
+
+
+
+o <- list(p, all_data[[1]][[5]], all_data[[1]][[6]], all_data[[1]][[7]])
+s <- Reduce(function(x, y) full_join(x, y, by = c("id_gradoaula.x", "id_gradoaula"), o))
+
+
+
+
 
