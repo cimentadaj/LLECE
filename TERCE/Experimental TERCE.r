@@ -53,14 +53,14 @@ if ( !("Bases de datos texto" %in% list.files(direc[1])) ) {
   unzip(unzp_file, exdir = paste0(direc[1]))
 }
 
+# If 'Texto' hasn't been unrared, unrar it.
 if ( !("Texto" %in% list.files(direc[2])) ) {
   unrar_fun <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/Functions/unrar.R"
   source_url(unrar_fun, sha = sha_url(unrar_fun))
   
+  # Create exact path to the .rar file
   rar_path <- paste0(direc[2], grep("texto", list.files(direc[2]), value = T))
-  rar_path_upd <- gsub("[[:blank:]]", "\\\\ ", rar_path)
-  rar_extract <- gsub("[[:blank:]]", "\\\\ ", direc[2])
-  unrar(rar_path_upd, rar_extract)
+  unrar(rar_path, direc[2])
   
   # All csv files inside the "Texto" folder in Factores asociados
   csv_files <- list.files(dir_texto, pattern = "*.csv")
@@ -73,9 +73,10 @@ if ( !("Texto" %in% list.files(direc[2])) ) {
   rm(empty)
 }
 
-# In case you unrared "Texto" manually, then it assumes that each csv file is comma
-# separated and not separated by ';'. In case it's not, run the loop above which
-# reads each csv as ; delimited and saves as comma separated.
+# In case you unrared "Texto" manually, then the script assumes
+# that each csv file is comma separated and not separated by ';'.
+# In case it's not, run the loop above which reads each csv as ;
+# delimited and saves as comma separated.
 
 files3 <- c("QA3.csv",
             "QD3.csv",
