@@ -1,5 +1,6 @@
 library(tidyverse)
 library(downloader)
+library(haven)
 
 # SET WORKING DIRECTORY HERE WHERE FILES WILL BE (IN CASE THEY MUST BE DOWNLOADED)
 # AND WHERE FILES ARE (IN CASE NO DOWNLOAD IS NECESSARY)
@@ -49,10 +50,17 @@ if (!(any(unrar_name))) {
   extracter <- function(folder, exdir, password = NULL) {
     
     # Remember to end both paths with /
-    rar_files <- list.files(folder)[grepl("\\.rar", list.files(folder))]
+    rar_files <- list.files(folder, "*.rar")
     for (i in rar_files) unrar(paste0(folder, i), exdir, password)
   }
   
   # Loop through each folder path and extract all rar files within each path
   for (i in folder_path) extracter(i, i, "serce2007")
 }
+
+# if the first file was unrared manually, the program assumes that
+# all other files within that file have been unrared as well.
+
+all_data <- vector("list", )
+read_spss()
+
