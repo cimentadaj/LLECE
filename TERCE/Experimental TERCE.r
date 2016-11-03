@@ -54,7 +54,13 @@ if ( !("Bases de datos texto" %in% list.files(direc[1])) ) {
 }
 
 if ( !("Texto" %in% list.files(direc[2])) ) {
-  # Stil to do: unrar "Texto"
+  unrar_fun <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/Functions/unrar.R"
+  source_url(unrar_fun, sha = sha_url(unrar_fun))
+  
+  rar_path <- paste0(direc[2], grep("texto", list.files(direc[2]), value = T))
+  rar_path_upd <- gsub("[[:blank:]]", "\\\\ ", rar_path)
+  rar_extract <- gsub("[[:blank:]]", "\\\\ ", direc[2])
+  unrar(rar_path_upd, rar_extract)
   
   # All csv files inside the "Texto" folder in Factores asociados
   csv_files <- list.files(dir_texto, pattern = "*.csv")
