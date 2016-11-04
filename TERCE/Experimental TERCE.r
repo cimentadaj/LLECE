@@ -171,7 +171,10 @@ namer <- function(nam, char, excp) {
   nam[!(nam %in% excp)] <- paste0(charstr, char)
   nam
 }
-           
+
+# This function matches two patterns and if actual = T
+# subsets only the indexes of those two patterns. If actual
+# == F, subsets everything but those two patterns.
 grep2_pattern <- function(p1, p2, vec, actual = T) {
   first <- grepl(p1, vec)
   second <- grepl(p2, vec)
