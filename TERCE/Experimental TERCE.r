@@ -43,7 +43,7 @@ if (length(index) != 0) {
 }
 
 # save as different files
-dir <- "/Users/cimentadaj/Downloads/terce/"
+directory <- "/Users/cimentadaj/Downloads/terce/"
 
 terce <- function(directory) {
   stopifnot(dir.exists(directory))
@@ -119,6 +119,7 @@ files6 <- c(list.files(dir_texto, pattern = "6"), list.files(dir_bases, pattern 
 
 # Only the 6th grades from texto folder
 all6 <- paste0(dir_texto, files6[1:(length(files6) - 3)])
+
 # Now combined with the files from bases de texto folder
 all6 <- c(all6, paste0(dir_bases, files6[(length(files6) - 2):length(files6)]))
 
@@ -175,11 +176,21 @@ finder <- c("32" = "ARG",
             "604" = "PER",
             "858" = "URU",
             "4841" = "NLE")
+
+data_compiled[[1]] <- lapply(data_compiled[[1]], function(i) {
+  i$idgrade <- 3
+  i
+})
+
+data_compiled[[2]] <- lapply(data_compiled[[2]], function(i) {
+  i$idgrade <- 6
+})
+
            
 data_compiled2 <- lapply(data_compiled, function(x) lapply(x, function(p) {
+  p$sID <- paste0(p$idgrade, p$idcntry, p$idstud)
+  p$oID <- paste0(p$idgrade, p$idcntry, p$idschool)
   p$country <- finder[as.character(p$idcntry)]
-  p$sID <- paste0(p$country, p$idstud)
-  p$oID <- paste0(p$country, p$idschool)
   p
 }))
 
@@ -200,19 +211,23 @@ grep2_pattern <- function(p1, p2, vec, actual = T) {
   if (actual) vec[as.logical(first + second)]
   else vec[!as.logical(first + second)]
 }
-           
+
+dat <- data_compiled2[[1]]
+suffix = c("_student", "_director", "_family",
+          "_lteacher", "_mteacher", "_language",
+          "_math")
+
 merger <- function(dat, suffix) {
-             
   df <- Map(function(x, y) setNames(x, namer(names(x), y, c("oID", "sID"))), dat, suffix)
   # Function merges every element of the list
   teach_dir <- df[grep2_pattern("director","teacher", names(df))]
-  teach_dir_merge <- Reduce(function(x, y) full_join(x, y, by = c("oID")), teach_dir)
-             
+  teach_dir_merge <- Reduce(function(x, y) full_join(x, y, by = c("oID", "sID")), teach_dir)
+ 
   # Function merges every element of the list
   student2 <- df[grep2_pattern("director","teacher", names(df), actual = F)]
   student2_merge <- Reduce(function(x, y) full_join(x, y, by = c("sID")), student2)
              
-  all <- full_join(student2_merge, teach_dir_merge, by = c("oID.x" = "oID"))
+  all <- full_join(student2_merge, teach_dir_merge, by = c("sID"))
              
   all
 }
@@ -252,15 +267,16 @@ rm(list = ls()[!(ls() %in% c("all_data2"))])
 all_data2
 }
 
-all <- terce(dir)
+all <- terce(directory)
 
+format = "SAS"
 
 suffix <- switch(format, "csv" = ".csv",
                  "Stata" = ".dat",
                  "SPSS" = ".sav",
                  "SAS" = ".sas")
 
-output_path <- paste0(output_path, "terce", suffix)
+output_path <- paste0(dir, "terce", suffix)
 
 all_data2 <- all
 if (format == "csv") write_csv(all_data2, output_path)
