@@ -184,6 +184,7 @@ data_compiled[[1]] <- lapply(data_compiled[[1]], function(i) {
 
 data_compiled[[2]] <- lapply(data_compiled[[2]], function(i) {
   i$idgrade <- 6
+  i
 })
 
            
@@ -212,10 +213,10 @@ grep2_pattern <- function(p1, p2, vec, actual = T) {
   else vec[!as.logical(first + second)]
 }
 
-dat <- data_compiled2[[1]]
-suffix = c("_student", "_director", "_family",
-          "_lteacher", "_mteacher", "_language",
-          "_math")
+# dat <- data_compiled2[[2]]
+# suffix = c("_student", "_director", "_family",
+#            "_lteacher", "_mteacher", "_steacher",
+#            "_language", "_math", "_science")
 
 merger <- function(dat, suffix) {
   df <- Map(function(x, y) setNames(x, namer(names(x), y, c("oID", "sID"))), dat, suffix)
