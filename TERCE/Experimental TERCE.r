@@ -2,6 +2,13 @@ library(tidyverse)
 library(haven)
 library(readr)
 library(downloader)
+unrar_fun <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/Functions/unrar.R"
+
+# One big mistake-prone part of the code is assigning a different database name
+# to a different database.
+
+# returns the df with lowercase names
+# returns the country codes changed as country names
 
 # SET WORKING DIRECTORY HERE WHERE FILES WILL BE (IN CASE THEY MUST BE DOWNLOADED)
 # AND WHERE FILES ARE (IN CASE NO DOWNLOAD IS NECESSARY)
@@ -35,37 +42,57 @@ if (length(index) != 0) {
   rm(temp)
 }
 
+# save as different files
+dir <- "/Users/cimentadaj/Downloads/terce/"
 
-###### Reading and merging third grade data #######
+terce <- function(directory) {
+  stopifnot(dir.exists(directory))
+  
+# Checks which files are unzipped:
+database <- c("Logro-de-aprendizaje.zip", "Factores-asociados.zip")
+correct_name <- gsub(".zip", "", database)
+correct_name <- gsub("-", " ", correct_name)
+index <- which(!(correct_name %in% list.files(directory)))
 
-direc <- paste0(getwd(), "/", correct_name, "/")
+# If some files haven't been unzipped, then unzip them:
+if (length(index) != 0) {
+  # Files which haven't been unzipped
+  fl <- database[index]
+  for (i in fl) unzip(paste0(directory , "/", i), exdir = directory)
+}
 
-dir_bases <- paste0(direc[1], "Bases de datos texto", "/")
-dir_texto <- paste0(direc[2], "Texto", "/")
+# Create a directory with the with unzipped folders from the directory provided
+direc <- paste0(directory, "/", list.files(directory, pattern = " "), "/")
+
+# Let's access the folders where the data is:
+dir_bases <- paste0(direc[2], "Bases de datos texto", "/")
+dir_texto <- paste0(direc[1], "Texto", "/")
 
 # If the file is not unzipped, unzip it.
-if ( !("Bases de datos texto" %in% list.files(direc[1])) ) {
+if ( !("Bases de datos texto" %in% list.files(direc[2])) ) {
+  fl_zip <- direc[2]
   # Find the 'text' zip file and create zip file path
-  unzp_file <- grep("texto", list.files(direc[1]), value = T)
-  unzp_file <- paste0(direc[1], unzp_file)
+  unzp_file <- grep("texto", list.files(fl_zip), value = T)
+  unzp_file <- paste0(fl_zip, unzp_file)
   
   # unzip to its directory
-  unzip(unzp_file, exdir = paste0(direc[1]))
+  unzip(unzp_file, exdir = paste0(direc[2]))
 }
 
 # If 'Texto' hasn't been unrared, unrar it.
-if ( !("Texto" %in% list.files(direc[2])) ) {
+if ( !("Texto" %in% list.files(direc[1])) ) {
+  fl_zip2 <- direc[1]
   unrar_fun <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/Functions/unrar.R"
   source_url(unrar_fun, sha = sha_url(unrar_fun))
   
   # Create exact path to the .rar file
-  rar_path <- paste0(direc[2], grep("texto", list.files(direc[2]), value = T))
-  unrar(rar_path, direc[2])
+  rar_path <- paste0(fl_zip2, grep("texto", list.files(fl_zip2), value = T))
+  unrar(rar_path, fl_zip2)
   
   # All csv files inside the "Texto" folder in Factores asociados
   csv_files <- list.files(dir_texto, pattern = "*.csv")
   
-  # Read all csv files with ; separator and save as csv files
+  # Read all csv files with that are ';' separated and save as csv.
   for (i in csv_files) {
       write_csv(empty <- read_delim(paste0(dir_texto, i), delim = ";", col_names = T),
                 path = paste0(dir_texto, i))
@@ -78,36 +105,25 @@ if ( !("Texto" %in% list.files(direc[2])) ) {
 # In case it's not, run the loop above which reads each csv as ;
 # delimited and saves as comma separated.
 
-files3 <- c("QA3.csv",
-            "QD3.csv",
-            "QF3.csv",
-            "QP3L.csv",
-            "QP3M.csv",
-            "PL3_all_TERCE.csv",
-            "PM3_all_TERCE.csv")
+# Files for only third graders
+files3 <- c(list.files(dir_texto, pattern = "3"), list.files(dir_bases, pattern = "3"))
 
 # Only 3rd grade files from the texto folder
 all3 <- paste0(dir_texto, files3[1:(length(files3) - 2)])
+
 # Now combined with the files from the bases de texto folder
 all3 <- c(all3, paste0(dir_bases, files3[(length(files3) - 1):length(files3)]))
 
 # Repeat exactly the same from above to 6th grade (which has the additional science class)
-files6 <- c("QA6.csv",
-            "QD6.csv",
-            "QF6.csv",
-            "QP6L.csv",
-            "QP6M.csv",
-            "QP6C.csv",
-            "PL6_all_TERCE.csv",
-            "PM6_all_TERCE.csv",
-            "PC6_all_TERCE.csv")
+files6 <- c(list.files(dir_texto, pattern = "6"), list.files(dir_bases, pattern = "6"))
 
 # Only the 6th grades from texto folder
 all6 <- paste0(dir_texto, files6[1:(length(files6) - 3)])
 # Now combined with the files from bases de texto folder
 all6 <- c(all6, paste0(dir_bases, files6[(length(files6) - 2):length(files6)]))
 
-# Names of each data base to be assigned           
+# Names of each data base to be assigned
+
 vecname3 <- paste0(c("student",
                      "director",
                      "family",
@@ -116,6 +132,7 @@ vecname3 <- paste0(c("student",
                      "language",
                      "math"),
                    "3")
+
 vecname6 <- paste0(c("student",
                      "director",
                      "family",
@@ -128,8 +145,10 @@ vecname6 <- paste0(c("student",
                    "6")
 
 
+# List that will contain the third and sixth data base.
 data_compiled <- list(third = list(), sixth = list())
-# Read each data from third and 6th grade and assign the database name from the above vectors
+
+# Read each data from third and sixth grade and assign the database name from the above vectors
 data_compiled[[1]] <- Map(function(x, y) assign(x, read_csv(y, col_names = T)), vecname3, all3)
 data_compiled[[2]] <- Map(function(x, y) assign(x, read_csv(y, col_names = T)), vecname6, all6)
            
@@ -230,3 +249,21 @@ all_data2 <- setmove(all_data, c("sID",
                              "idgrade"))
            
 rm(list = ls()[!(ls() %in% c("all_data2"))])
+all_data2
+}
+
+all <- terce(dir)
+
+
+suffix <- switch(format, "csv" = ".csv",
+                 "Stata" = ".dat",
+                 "SPSS" = ".sav",
+                 "SAS" = ".sas")
+
+output_path <- paste0(output_path, "terce", suffix)
+
+all_data2 <- all
+if (format == "csv") write_csv(all_data2, output_path)
+if (format == "Stata") write_dta(all_data2, output_path)
+if (format == "SPSS") write_sav(all_data2, output_path)
+if (format == "SAS") write_sas(all_data2, output_path)
