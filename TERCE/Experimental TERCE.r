@@ -45,7 +45,7 @@ if (length(index) != 0) {
 # save as different files
 directory <- "/Users/cimentadaj/Downloads/terce/"
 
-terce <- function(directory) {
+terce <- function(directory, output_path = directory, save_format = c("csv", "Stata", "SPSS", "SAS")) {
 stopifnot(dir.exists(directory))
   
 # Checks which files are unzipped:
@@ -260,27 +260,35 @@ all_data2 <- setmove(all_data, c("sID",
                              "ruralidad",
                              "genero",
                              "idgrade"))
-           
+
+suffix <- switch(save_format,
+                 "csv" = ".csv",
+                 "Stata" = ".dta",
+                 "SPSS" = ".sav",
+                 "SAS" = ".sas7bdat")
+
+output_path <- paste0(output_path, "terce", suffix)
+
+if (save_format == "csv") write_csv(all_data2, output_path)
+if (save_format == "Stata") write_dta(all_data2, output_path, version = 13)
+if (save_format == "SPSS") write_sav(all_data2, output_path)
+if (save_format == "SAS") write_sas(all_data2, output_path)
+
 rm(list = ls()[!(ls() %in% c("all_data2"))])
+
 all_data2
 }
 
-all <- terce(directory)
-
-format = "Stata"
-
-suffix <- switch(format, "csv" = ".csv",
-                 "Stata" = ".dta",
-                 "SPSS" = ".sav",
-                 "SAS" = ".sas")
-
-output_path <- paste0(directory, "terce", suffix)
-
-all_data2 <- all
-if (format == "csv") write_csv(all_data2, output_path)
-if (format == "Stata") write_dta(all_data2, output_path, 13)
-if (format == "SPSS") write_sav(all_data2, output_path)
-if (format == "SAS") write_sas(all_data2, output_path)
+all <- terce(directory, save_format = "Stata")
 
 # progress bar
 # https://www.r-bloggers.com/tracking-progress-in-r/
+
+# things to add:
+# Stata version saving
+
+# Whether to return the df or not
+
+# Roxygen skeleton
+
+# sas is crashing
