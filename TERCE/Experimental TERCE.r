@@ -213,11 +213,6 @@ grep2_pattern <- function(p1, p2, vec, actual = T) {
   else vec[!as.logical(first + second)]
 }
 
-# dat <- data_compiled2[[2]]
-# suffix = c("_student", "_director", "_family",
-#            "_lteacher", "_mteacher", "_steacher",
-#            "_language", "_math", "_science")
-
 merger <- function(dat, suffix) {
   df <- Map(function(x, y) setNames(x, namer(names(x), y, c("oID", "sID"))), dat, suffix)
   # Function merges every element of the list
@@ -228,7 +223,7 @@ merger <- function(dat, suffix) {
   student2 <- df[grep2_pattern("director","teacher", names(df), actual = F)]
   student2_merge <- Reduce(function(x, y) full_join(x, y, by = c("sID")), student2)
              
-  all <- full_join(student2_merge, teach_dir_merge, by = c("sID"))
+  all <- full_join(student2_merge, teach_dir_merge, by = c("oID"))
              
   all
 }
@@ -284,3 +279,6 @@ if (format == "csv") write_csv(all_data2, output_path)
 if (format == "Stata") write_dta(all_data2, output_path)
 if (format == "SPSS") write_sav(all_data2, output_path)
 if (format == "SAS") write_sas(all_data2, output_path)
+
+# progress bar
+# https://www.r-bloggers.com/tracking-progress-in-r/
