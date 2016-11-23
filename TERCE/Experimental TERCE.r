@@ -204,28 +204,18 @@ namer <- function(nam, char, excp) {
   nam
 }
 
-# This function matches two patterns and if actual = T
-# subsets only the indexes of those two patterns. If actual
-# == F, subsets everything but those two patterns.
-grep2_pattern <- function(p1, p2, vec, actual = T) {
-  first <- grepl(p1, vec)
-  second <- grepl(p2, vec)
-  if (actual) vec[as.logical(first + second)]
-  else vec[!as.logical(first + second)]
-}
-
 merger <- function(dat, suffix) {
   df <- Map(function(x, y) setNames(x, namer(names(x), y, c("oID", "sID"))), dat, suffix)
   # Function merges every element of the list
-  teach_dir <- df[grep2_pattern("director","teacher", names(df))]
+  teach_dir <- df[grep("director|teacher", names(df), value = T)]
   teach_dir_merge <- Reduce(function(x, y) full_join(x, y, by = c("oID", "sID")), teach_dir)
- 
+  
   # Function merges every element of the list
-  student2 <- df[grep2_pattern("director","teacher", names(df), actual = F)]
+  student2 <- df[grep("director|teacher", names(df), inv = T, value = T)]
   student2_merge <- Reduce(function(x, y) full_join(x, y, by = c("oID", "sID")), student2)
-
+  
   all <- full_join(student2_merge, teach_dir_merge, by = c("oID", "sID"))
-             
+  
   all
 }
   
