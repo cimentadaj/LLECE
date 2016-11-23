@@ -42,6 +42,12 @@ if (length(index) != 0) {
   rm(temp)
 }
 
+
+# In case you unrared "Texto" manually, then the script assumes
+# that each csv file is comma separated and not separated by ';'.
+# In case it's not, run the loop above which reads each csv as ;
+# delimited and saves as comma separated.
+
 # save as different files
 directory <- "/Users/cimentadaj/Downloads/terce/"
 
@@ -51,23 +57,23 @@ stopifnot(dir.exists(directory))
   
 # Checks which files are unzipped:
 database <- list.files(directory, pattern = ".zip")
-correct_name <- gsub("(- | .zip)", " ", database)
-correct_name <- gsub("-", " ", correct_name)
-index <- which(!(correct_name %in% list.files(directory)))
+correct_name <- trimws(gsub("-|.zip", " ", database), "right")
 
+index <- which(!(correct_name %in% list.files(directory)))
 # If some files haven't been unzipped, then unzip them:
 if (length(index) != 0) {
   # Files which haven't been unzipped
   fl <- database[index]
   for (i in fl) unzip(paste0(directory , "/", i), exdir = directory)
+  rm(database, correct_name)
 }
 
 # Create a directory with the with unzipped folders from the directory provided
-direc <- paste0(directory, "/", list.files(directory, pattern = " "), "/")
+direc <- paste0(directory, "/", grep(".zip", list.files(directory), inv = T, value = T), "/")
 
 # Let's access the folders where the data is:
-dir_bases <- paste0(direc[2], "Bases de datos texto", "/")
-dir_texto <- paste0(direc[1], "Texto", "/")
+dir_bases <- paste0(direc[2], "Bases de datos texto/")
+dir_texto <- paste0(direc[1], "Texto/")
 
 # If the file is not unzipped, unzip it.
 if ( !("Bases de datos texto" %in% list.files(direc[2])) ) {
@@ -78,6 +84,7 @@ if ( !("Bases de datos texto" %in% list.files(direc[2])) ) {
   
   # unzip to its directory
   unzip(unzp_file, exdir = paste0(direc[2]))
+  rm(fl_zip, unzp_file)
 }
 
 # If 'Texto' hasn't been unrared, unrar it.
@@ -98,7 +105,7 @@ if ( !("Texto" %in% list.files(direc[1])) ) {
       write_csv(empty <- read_delim(paste0(dir_texto, i), delim = ";", col_names = T),
                 path = paste0(dir_texto, i))
   }
-  rm(empty)
+  rm(empty, fl_zip2, rar_path, csv_files)
 }
 
 # In case you unrared "Texto" manually, then the script assumes
@@ -113,7 +120,7 @@ files3 <- c(list.files(dir_texto, pattern = "3"), list.files(dir_bases, pattern 
 all3 <- paste0(dir_texto, files3[1:(length(files3) - 2)])
 
 # Now combined with the files from the bases de texto folder
-all3 <- c(all3, paste0(dir_bases, files3[(length(files3) - 1):length(files3)]))
+all3 <- sort(c(all3, paste0(dir_bases, files3[(length(files3) - 1):length(files3)])))
 
 # Repeat exactly the same from above to 6th grade (which has the additional science class)
 files6 <- c(list.files(dir_texto, pattern = "6"), list.files(dir_bases, pattern = "6"))
@@ -122,7 +129,7 @@ files6 <- c(list.files(dir_texto, pattern = "6"), list.files(dir_bases, pattern 
 all6 <- paste0(dir_texto, files6[1:(length(files6) - 3)])
 
 # Now combined with the files from bases de texto folder
-all6 <- c(all6, paste0(dir_bases, files6[(length(files6) - 2):length(files6)]))
+all6 <- sort(c(all6, paste0(dir_bases, files6[(length(files6) - 2):length(files6)])))
 
 # Names of each data base to be assigned
 
@@ -138,12 +145,12 @@ vecname3 <- paste0(c("student",
 vecname6 <- paste0(c("student",
                      "director",
                      "family",
+                     "steacher",
                      "lteacher",
                      "mteacher",
-                     "steacher",
+                     "science",
                      "language",
-                     "math",
-                     "science"),
+                     "math"),
                    "6")
 
 
@@ -153,13 +160,6 @@ data_compiled <- list(third = list(), sixth = list())
 # Read each data from third and sixth grade and assign the database name from the above vectors
 data_compiled[[1]] <- Map(function(x, y) assign(x, read_csv(y, col_names = T)), vecname3, all3)
 data_compiled[[2]] <- Map(function(x, y) assign(x, read_csv(y, col_names = T)), vecname6, all6)
-           
-# Lower case column names and transform to data frame
-data_compiled <- lapply(data_compiled, function(x) lapply(x, function(p) {
-  names(p) <- tolower(names(p))
-  p <- as.data.frame(p)
-  p
-}))
 
 finder <- c("32" = "ARG",
             "76" = "BRA",
@@ -178,17 +178,17 @@ finder <- c("32" = "ARG",
             "858" = "URU",
             "4841" = "NLE")
 
-data_compiled[[1]] <- lapply(data_compiled[[1]], function(i) {
-  i$idgrade <- 3
-  i
-})
+# Lower case column names and transform to data frame
+data_compiled <- lapply(data_compiled, function(x) lapply(x, function(p) {
+  names(p) <- tolower(names(p))
+  p <- as.data.frame(p)
+  p
+}))
 
-data_compiled[[2]] <- lapply(data_compiled[[2]], function(i) {
-  i$idgrade <- 6
-  i
-})
 
-    
+data_compiled[[1]] <- lapply(data_compiled[[1]], function(i) { i$idgrade <- 3; i})
+data_compiled[[2]] <- lapply(data_compiled[[2]], function(i) {i$idgrade <- 6; i})
+
 data_compiled2 <- lapply(data_compiled, function(x) lapply(x, function(p) {
   p$sID <- paste0(p$idgrade, p$idcntry, p$idstud)
   p$oID <- paste0(p$idgrade, p$idcntry, p$idschool)
