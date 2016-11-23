@@ -46,7 +46,7 @@ if (length(index) != 0) {
 directory <- "/Users/cimentadaj/Downloads/terce/"
 
 terce <- function(directory) {
-  stopifnot(dir.exists(directory))
+stopifnot(dir.exists(directory))
   
 # Checks which files are unzipped:
 database <- c("Logro-de-aprendizaje.zip", "Factores-asociados.zip")
@@ -187,7 +187,7 @@ data_compiled[[2]] <- lapply(data_compiled[[2]], function(i) {
   i
 })
 
-           
+    
 data_compiled2 <- lapply(data_compiled, function(x) lapply(x, function(p) {
   p$sID <- paste0(p$idgrade, p$idcntry, p$idstud)
   p$oID <- paste0(p$idgrade, p$idcntry, p$idschool)
@@ -221,13 +221,13 @@ merger <- function(dat, suffix) {
  
   # Function merges every element of the list
   student2 <- df[grep2_pattern("director","teacher", names(df), actual = F)]
-  student2_merge <- Reduce(function(x, y) full_join(x, y, by = c("sID")), student2)
-             
-  all <- full_join(student2_merge, teach_dir_merge, by = c("oID"))
+  student2_merge <- Reduce(function(x, y) full_join(x, y, by = c("oID", "sID")), student2)
+
+  all <- full_join(student2_merge, teach_dir_merge, by = c("oID", "sID"))
              
   all
 }
-           
+  
 three <- merger(data_compiled2[[1]], suffix = c("_student", "_director", "_family",
                                                 "_lteacher", "_mteacher", "_language",
                                                 "_math"))
@@ -237,7 +237,7 @@ six <- merger(data_compiled2[[2]], suffix = c("_student", "_director", "_family"
                                               "_language", "_math", "_science"))
            
 all_data <- full_join(three, six)
-           
+
 setmove <- function(df, columns) {
   df[, c(columns, setdiff(names(df), columns))]
 }
@@ -249,6 +249,8 @@ all_data$dependencia <- all_data$dependencia_student
 all_data$ruralidad <- all_data$ruralidad_student
 all_data$genero <- all_data$genero_student
 all_data$idgrade <- all_data$idgrade_student
+
+names(all_data) <- gsub("date.df", "date_df", names(all_data))
            
            
 all_data2 <- setmove(all_data, c("sID",
@@ -265,18 +267,18 @@ all_data2
 
 all <- terce(directory)
 
-format = "SAS"
+format = "Stata"
 
 suffix <- switch(format, "csv" = ".csv",
-                 "Stata" = ".dat",
+                 "Stata" = ".dta",
                  "SPSS" = ".sav",
                  "SAS" = ".sas")
 
-output_path <- paste0(dir, "terce", suffix)
+output_path <- paste0(directory, "terce", suffix)
 
 all_data2 <- all
 if (format == "csv") write_csv(all_data2, output_path)
-if (format == "Stata") write_dta(all_data2, output_path)
+if (format == "Stata") write_dta(all_data2, output_path, 13)
 if (format == "SPSS") write_sav(all_data2, output_path)
 if (format == "SAS") write_sas(all_data2, output_path)
 
