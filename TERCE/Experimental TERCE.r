@@ -1,5 +1,4 @@
 
-
 terce <- function(directory, return_df = T, save = F, output_path = directory, save_format = c("csv", "Stata", "SPSS"), stata_version = 13) {
 require(tidyverse)
 require(haven)
@@ -7,6 +6,8 @@ require(readr)
 require(downloader)
   
 unrar_fun <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/Functions/unrar.R"
+source_url(unrar_fun, sha = sha_url(unrar_fun))
+
 stopifnot(dir.exists(directory))
   
 # Checks which files are unzipped:
@@ -158,17 +159,22 @@ namer <- function(nam, char, excp) {
   nam
 }
 
+dat <- data_compiled2[[1]]
+suffix = c("_student", "_director", "_family",
+           "_lteacher", "_mteacher", "_language",
+           "_math")
+
 merger <- function(dat, suffix) {
   df <- Map(function(x, y) setNames(x, namer(names(x), y, c("oID", "sID"))), dat, suffix)
   # Function merges every element of the list
   teach_dir <- df[grep("director|teacher", names(df), value = T)]
-  teach_dir_merge <- Reduce(function(x, y) full_join(x, y, by = c("oID", "sID")), teach_dir)
+  teach_dir_merge <- Reduce(function(x, y) full_join(x, y, by = c("oID")), teach_dir)
   
   # Function merges every element of the list
   student2 <- df[grep("director|teacher", names(df), inv = T, value = T)]
-  student2_merge <- Reduce(function(x, y) full_join(x, y, by = c("oID", "sID")), student2)
+  student2_merge <- Reduce(function(x, y) full_join(x, y, by = c("sID")), student2)
   
-  all <- full_join(student2_merge, teach_dir_merge, by = c("oID", "sID"))
+  all <- full_join(student2_merge, teach_dir_merge, by = c("oID.x" = "oID"))
   
   all
 }
