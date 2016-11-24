@@ -1,58 +1,12 @@
-library(tidyverse)
-library(haven)
-library(readr)
-library(downloader)
+
+
+terce <- function(directory, return_df = T, save = F, output_path = directory, save_format = c("csv", "Stata", "SPSS"), stata_version = 13) {
+require(tidyverse)
+require(haven)
+require(readr)
+require(downloader)
+  
 unrar_fun <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/Functions/unrar.R"
-
-# One big mistake-prone part of the code is assigning a different database name
-# to a different database.
-
-# returns the df with lowercase names
-# returns the country codes changed as country names
-
-# SET WORKING DIRECTORY HERE WHERE FILES WILL BE (IN CASE THEY MUST BE DOWNLOADED)
-# AND WHERE FILES ARE (IN CASE NO DOWNLOAD IS NECESSARY)
-
-setwd("/Users/cimentadaj/Downloads/terce")
-
-# File names and url
-database <- c("Logro-de-aprendizaje.zip", "Factores-asociados.zip")
-download_url <- "http://www.unesco.org/new/fileadmin/MULTIMEDIA/FIELD/Santiago/zip/"
-
-# Make folder names
-correct_name <- gsub(".zip", "", database)
-correct_name <- gsub("-", " ", correct_name)
-
-# Which folders are not in the working directory?
-index <- which(!(correct_name %in% list.files(getwd())))
-
-# For the files which are not in the working directory, download and unzip in the wd
-if (length(index) != 0) {
-  # Files which haven't been downloaded
-  fl <- database[index]
-  temp <- tempdir()
-  for (i in fl) {
-    # Create directory to download
-    file_name <- paste0(temp, "/", i)
-    
-    # Download files and unzip
-    download(paste0(download_url, i), file_name)
-    unzip(file_name, exdir = getwd())
-  }
-  rm(temp)
-}
-
-
-# In case you unrared "Texto" manually, then the script assumes
-# that each csv file is comma separated and not separated by ';'.
-# In case it's not, run the loop above which reads each csv as ;
-# delimited and saves as comma separated.
-
-# save as different files
-directory <- "/Users/cimentadaj/Downloads/terce/"
-
-terce <- function(directory, return_df = T, output_path = directory, save_format = c("csv", "Stata", "SPSS"), stata_version = 13) {
-
 stopifnot(dir.exists(directory))
   
 # Checks which files are unzipped:
@@ -187,7 +141,7 @@ data_compiled <- lapply(data_compiled, function(x) lapply(x, function(p) {
 
 
 data_compiled[[1]] <- lapply(data_compiled[[1]], function(i) { i$idgrade <- 3; i})
-data_compiled[[2]] <- lapply(data_compiled[[2]], function(i) {i$idgrade <- 6; i})
+data_compiled[[2]] <- lapply(data_compiled[[2]], function(i) { i$idgrade <- 6; i})
 
 data_compiled2 <- lapply(data_compiled, function(x) lapply(x, function(p) {
   p$sID <- paste0(p$idgrade, p$idcntry, p$idstud)
@@ -252,23 +206,23 @@ all_data2 <- setmove(all_data, c("sID",
                              "genero",
                              "idgrade"))
 
-suffix <- switch(save_format,
+if (save) {
+suffix <- switch(save_format[1],
                  "csv" = ".csv",
                  "Stata" = ".dta",
                  "SPSS" = ".sav")
 
 output_path <- paste0(output_path, "terce", suffix)
 
-if (save_format == "csv") write_csv(all_data2, output_path)
-if (save_format == "Stata") write_dta(all_data2, output_path, stata_version)
-if (save_format == "SPSS") write_sav(all_data2, output_path)
-
+if (save_format[1] == "csv") write_csv(all_data2, output_path)
+if (save_format[1] == "Stata") write_dta(all_data2, output_path, stata_version)
+if (save_format[1] == "SPSS") write_sav(all_data2, output_path)
+}
 
 if (return_df) return(all_data2)
 rm(list = ls()[!(ls() %in% c("all_data2"))])
-}
 
-terce(directory, return_df = F, save_format = "SAS")
+}
 
 # progress bar
 # https://www.r-bloggers.com/tracking-progress-in-r/
