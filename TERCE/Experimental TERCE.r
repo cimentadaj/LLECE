@@ -176,8 +176,8 @@ terce <- function(directory, return_df = T, save = F, output_path = directory, s
                                                   "_math"))
   
   six <- merger(data_compiled2[[2]], suffix = c("_student", "_director", "_family",
-                                                "_lteacher", "_mteacher", "_steacher",
-                                                "_language", "_math", "_science"))
+                                                "_steacher", "_lteacher", "_mteacher",
+                                                "_science", "_language", "_math"))
   
   all_data <- full_join(three, six)
   
