@@ -6,17 +6,11 @@ library(haven)
 # AND WHERE FILES ARE (IN CASE NO DOWNLOAD IS NECESSARY)
 setwd("/Users/cimentadaj/Downloads/serce")
 
-funs <- c("https://raw.githubusercontent.com/cimentadaj/LLECE/master/Functions/downloader_file.R",
-          "https://raw.githubusercontent.com/cimentadaj/LLECE/master/Functions/unrar.R")
+unrar <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/Functions/unrar.R"
 # The unrar functions relies heavily on have UnRAR installed in your OS.
 # So have a look at the link above. This script has been only tested in mac OSx.
 
-for(i in funs) source_url(i, sha = sha_url(i))
-
-downloader_file("bcf362e6.zip",
-                "http://www.unesco.org/new/fileadmin/MULTIMEDIA/FIELD/Santiago/zip/",
-                "SERCE",
-                getwd())
+source_url(unrar, sha = sha_url(unrar))
 
 data_dir <- paste0(getwd(), "/SERCE/")
 
