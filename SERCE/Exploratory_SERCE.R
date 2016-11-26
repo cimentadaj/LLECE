@@ -1,4 +1,6 @@
 # Add checking for a backslash as the last character of directory
+# Make sure all databases have all of their variables with the database prefix
+# excluding the three key variables for merging.
 
 directory <- "/Users/cimentadaj/Downloads/serce/SERCE/"
 serce <- function(directory, return_df = T, save = F, output_path = directory, save_format = c("csv", "Stata", "SPSS"), stata_version = 13) {
@@ -105,11 +107,39 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
   all_data[[2]] <- Map(function(x, y) assign(x, read_spss(y)), sixth, all_paths[[2]])
   all_data[[3]] <- Map(function(x, y) assign(x, read_spss(y)), school, all_paths[[3]])
   
-  for()
+  namer <- function(nam, char, excp) {
+    charstr <- nam[!(nam %in% excp)]
+    nam[!(nam %in% excp)] <- paste0(charstr, char)
+    nam
+  }
+  
+  third <- paste0("_", gsub("3", "", third))
+  sixth <- paste0("_", gsub("6", "", sixth))
+  school <- paste0("_", school)
+  vars <- c("id_alumno", "id_profesor", "id_gradoaula", "LlavePaisCentro")
+  
+  all_data[[1]] <- Map(function(x, y) setNames(x, namer(names(x), y, vars)),
+            all_data[[1]], third)
+  
+  all_data[[2]] <- Map(function(x, y) setNames(x, namer(names(x), y, vars)),
+                       all_data[[2]], sixth)
+  
+  all_data[[3]] <- Map(function(x, y) setNames(x, namer(names(x), y, vars)),
+                       all_data[[3]], school)
+  
+  
+  joiner <- function(x, y, keys, ...) {
+    
+    keys2 <- intersect(keys, names(x))
+    keys3 <- intersect(keys2, names(y))
+    
+    full_join(x, y, keys3, ...)
+  }
+  
   # Merge only student data with the "id_alumno" key
-  all3 <- Reduce(function(x, y) full_join(x, y, "id_alumno"), all_data[[1]][1:4])
-  all3_2 <- Reduce(function(x, y) full_join(x, y, "id_profesor"), all_data[[1]][5:7])
-  all3_3 <- full_join(all3, all3_2, "id_gradoaula.x" = "id_gradoaula")
+  all3 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[1]][1:4])
+  all3_2 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[1]][5:7])
+  all3_3 <- joiner(all3, all3_2, vars)
   
   all6 <- Reduce(function(x, y) full_join(x, y, "id_alumno"), all_data[[2]][1:5])
   all6_2 <- Reduce(function(x, y) full_join(x, y, "id_profesor"), all_data[[2]][6:9])
@@ -119,42 +149,6 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
   
   all <- full_join(all3_3, all6_3)
   all2 <- full_join(all_dir, all, "LlavePaisCentro" = "LlavePaisCentro.x")
-  
-  joiner <- function(x, y, key_vars, ...) {
-    
-    # Loop through all key variables and whenever
-    # a key variable is present in both data frames,
-    # stop the loop and assign the key variable to vector 'key'.
-    # If a key variable is in neither
-    # data frames, continue to the next key variable
-    for (i in key_vars) {
-      if (i %in% names(x) && i %in% names(y)) { 
-        key <- i; break
-      } else {
-        next
-      }
-    }
-    
-    # Merge data frame with the common key
-    df <- full_join(x, y, key, ...)
-    
-    # identify the keys that didn't match and change their names
-    # from the .x suffix to the original name. This is done
-    # for recursive merging which depends on the other 
-    # original names
-    remain <- setdiff(key_vars, key)
-    for (i in remain) names(df) <- gsub(paste0(i, "\\.x"), i, names(df))
-    
-    df
-  }
-  
-  key_variables <- c("id_alumno", "id_gradoaula", "LlavePaisCentro")
-  
-  ## EVerything below this line is experimental
-  p <- lapply(all_data, function(x) {
-    Reduce(function(x, y) joiner(x, y, key_variables), x)
-  })
-  
   
   
   # Lower case column names and transform to data frame
