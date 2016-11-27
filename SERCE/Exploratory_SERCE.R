@@ -107,6 +107,8 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
   all_data[[2]] <- Map(function(x, y) assign(x, read_spss(y)), sixth, all_paths[[2]])
   all_data[[3]] <- Map(function(x, y) assign(x, read_spss(y)), school, all_paths[[3]])
   
+  # Function updates the names of vector nam with the suffix char, excluding the elements
+  # 'excp'
   namer <- function(nam, char, excp) {
     charstr <- nam[!(nam %in% excp)]
     nam[!(nam %in% excp)] <- paste0(charstr, char)
@@ -116,17 +118,23 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
   third <- paste0("_", gsub("3", "", third))
   sixth <- paste0("_", gsub("6", "", sixth))
   school <- paste0("_", school)
-  vars <- c("id_alumno", "id_profesor", "id_gradoaula", "LlavePaisCentro")
-  
+  vars <- c("id_alumno", "id_profesor", "id_gradoaula", "llavepaiscentro")
+
+  # Lower case column names and transform to data frame
+  all_data <- lapply(all_data, function(x) lapply(x, function(p) {
+    names(p) <- tolower(names(p))
+    p <- as.data.frame(p)
+    p
+  }))
+    
   all_data[[1]] <- Map(function(x, y) setNames(x, namer(names(x), y, vars)),
-            all_data[[1]], third)
+                       all_data[[1]], third)
   
   all_data[[2]] <- Map(function(x, y) setNames(x, namer(names(x), y, vars)),
                        all_data[[2]], sixth)
   
   all_data[[3]] <- Map(function(x, y) setNames(x, namer(names(x), y, vars)),
                        all_data[[3]], school)
-  
   
   joiner <- function(x, y, keys, ...) {
     
@@ -139,28 +147,19 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
   # Merge only student data with the "id_alumno" key
   all3 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[1]][1:4])
   all3_2 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[1]][5:7])
-  all3_3 <- joiner(all3, all3_2, vars)
+  all3_3 <- full_join(all3, all3_2, "id_gradoaula")
+  all3_3 <- all3_3[!duplicated(all3_3$id_alumno), ]
   
-  all6 <- Reduce(function(x, y) full_join(x, y, "id_alumno"), all_data[[2]][1:5])
-  all6_2 <- Reduce(function(x, y) full_join(x, y, "id_profesor"), all_data[[2]][6:9])
-  all6_3 <- full_join(all6, all6_2, "id_gradoaula.x" = "id_gradoaula")
+  all6 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[2]][1:5])
+  all6_2 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[2]][6:9])
+  all6_3 <- full_join(all6, all6_2, "id_gradoaula")
+  all6_3 <- all6_3[!duplicated(all6_3$id_alumno), ]
   
-  all_dir <- full_join(all_data[[3]][[1]], all_data[[3]][[2]], "LlavePaisCentro")
+  all_dir <- joiner(all_data[[3]][[1]], all_data[[3]][[2]], vars)
   
   all <- full_join(all3_3, all6_3)
-  all2 <- full_join(all_dir, all, "LlavePaisCentro" = "LlavePaisCentro.x")
-  
-  
-  # Lower case column names and transform to data frame
-  data_compiled <- lapply(data_compiled, function(x) lapply(x, function(p) {
-    names(p) <- tolower(names(p))
-    p <- as.data.frame(p)
-    p
-  }))
-  
-  
-  data_compiled[[1]] <- lapply(data_compiled[[1]], function(i) { i$idgrade <- 3; i})
-  data_compiled[[2]] <- lapply(data_compiled[[2]], function(i) { i$idgrade <- 6; i})
+  all2 <- full_join(all_dir, all, c("llavepaiscentro" = "llavepaiscentro.x"))
+  dim(all2)
   
   data_compiled2 <- lapply(data_compiled, function(x) lapply(x, function(p) {
     p$sID <- paste0(p$idgrade, p$idcntry, p$idstud)
@@ -168,14 +167,6 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
     p$country <- finder[as.character(p$idcntry)]
     p
   }))
-  
-  # Function updates the names of vector nam with the suffix char, excluding the elements
-  # 'excp'
-  namer <- function(nam, char, excp) {
-    charstr <- nam[!(nam %in% excp)]
-    nam[!(nam %in% excp)] <- paste0(charstr, char)
-    nam
-  }
   
   merger <- function(dat, suffix) {
     df <- Map(function(x, y) setNames(x, namer(names(x), y, c("oID", "sID"))), dat, suffix)
