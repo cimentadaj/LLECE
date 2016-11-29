@@ -2,8 +2,10 @@
 # Make sure all databases have all of their variables with the database prefix
 # excluding the three key variables for merging.
 
+# if save == T, print message saying saving as CSV
+
 directory <- "/Users/cimentadaj/Downloads/serce/SERCE/"
-serce <- function(directory, return_df = T, save = F, output_path = directory, save_format = c("csv", "Stata", "SPSS"), stata_version = 13) {
+serce <- function(directory, return_df = T, save = F, output_path = directory, save_format = c("csv", "Stata", "SPSS"), stata_version = 14) {
   require(tidyverse)
   require(haven)
   require(readr)
@@ -59,7 +61,7 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
   # if the first file was unrared manually, the program assumes that
   # all other files within that file have been unrared as well.
   
-  folder <- paste0(directory, grep(".rar|.zip", list.files(directory), inv = T, value = T), "/")
+  folder <- paste0(directory, grep("_", list.files(directory), inv = T, value = T), "/")
   folder_names <- list.files(folder)[grep("\\.", list.files(folder), inv = T)]
   folder_path <- paste0(folder, folder_names, "/")
   
@@ -83,9 +85,9 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
                     "family",
                     "lscore",
                     "mscore",
-                    "language_q",
-                    "math_q",
-                    "teacher_q"),
+                    "language",
+                    "math",
+                    "teacher"),
                   "3")
   
   sixth <- paste0(c("student",
@@ -93,16 +95,17 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
                     "sscore",
                     "lscore",
                     "mscore",
-                    "science_q",
-                    "language_q",
-                    "math_q",
-                    "teacher_q"),
+                    "science",
+                    "language",
+                    "math",
+                    "teacher"),
                   "6")
   
-  school <- c("school_q", "director_q")
+  school <- c("school", "director")
   
   all_data <- list(third = NULL, sixth = NULL, school = NULL)
   
+  # Read the third and sixth grade data into the lists and the school/director data
   all_data[[1]] <- Map(function(x, y) assign(x, read_spss(y)), third, all_paths[[1]])
   all_data[[2]] <- Map(function(x, y) assign(x, read_spss(y)), sixth, all_paths[[2]])
   all_data[[3]] <- Map(function(x, y) assign(x, read_spss(y)), school, all_paths[[3]])
@@ -115,11 +118,11 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
     nam
   }
   
+  # Creating the suffix for each dataset
   third <- paste0("_", gsub("3", "", third))
   sixth <- paste0("_", gsub("6", "", sixth))
   school <- paste0("_", school)
-  vars <- c("id_alumno", "id_profesor", "id_gradoaula", "llavepaiscentro")
-
+  
   # Lower case column names and transform to data frame
   all_data <- lapply(all_data, function(x) lapply(x, function(p) {
     names(p) <- tolower(names(p))
@@ -127,6 +130,8 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
     p
   }))
     
+  vars <- c("id_alumno", "id_profesor", "id_gradoaula", "llavepaiscentro")
+  
   all_data[[1]] <- Map(function(x, y) setNames(x, namer(names(x), y, vars)),
                        all_data[[1]], third)
   
@@ -136,6 +141,10 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
   all_data[[3]] <- Map(function(x, y) setNames(x, namer(names(x), y, vars)),
                        all_data[[3]], school)
   
+  # This function accepts two data frames and vector of common
+  # variable names. The function only merges on the common variables
+  # This is useful when doing dynamic merging such as in the code chunks below
+  # where the common variables change between data frames.
   joiner <- function(x, y, keys, ...) {
     
     keys2 <- intersect(keys, names(x))
@@ -144,77 +153,44 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
     full_join(x, y, keys3, ...)
   }
   
-  # Merge only student data with the "id_alumno" key
-  all3 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[1]][1:4])
-  all3_2 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[1]][5:7])
-  all3_3 <- full_join(all3, all3_2, "id_gradoaula")
-  all3_3 <- all3_3[!duplicated(all3_3$id_alumno), ]
+  #  merge all datasets of students separately from the score and then
+  # merge together by a different key.
+  student_3 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[1]][1:4])
+  scores_3 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[1]][5:7])
+  third <- full_join(student_3, scores_3, "id_gradoaula") %>%
+    filter(!duplicated(id_alumno))
+
+  student_6 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[2]][1:5])
+  scores_6 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[2]][6:9])
+  six <- full_join(student_6, scores_6, "id_gradoaula") %>%
+    filter(!duplicated(id_alumno))
+
+  dir_school <- joiner(all_data[[3]][[1]], all_data[[3]][[2]], vars)
   
-  all6 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[2]][1:5])
-  all6_2 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[2]][6:9])
-  all6_3 <- full_join(all6, all6_2, "id_gradoaula")
-  all6_3 <- all6_3[!duplicated(all6_3$id_alumno), ]
+  both_grades <- full_join(third, six)
+  serce <- full_join(dir_school, both_grades, c("llavepaiscentro" = "llavepaiscentro.x")) %>%
+    rename(oID = llavepaiscentro,
+           sID = id_alumno,
+           country = pais_student,
+           ruralidad = admrur_student,
+           genero = qa3_item_2_student,
+           idgrade = grado_student)
   
-  all_dir <- joiner(all_data[[3]][[1]], all_data[[3]][[2]], vars)
+  # dependencia is still missing
   
-  all <- full_join(all3_3, all6_3)
-  all2 <- full_join(all_dir, all, c("llavepaiscentro" = "llavepaiscentro.x"))
-  dim(all2)
-  
-  data_compiled2 <- lapply(data_compiled, function(x) lapply(x, function(p) {
-    p$sID <- paste0(p$idgrade, p$idcntry, p$idstud)
-    p$oID <- paste0(p$idgrade, p$idcntry, p$idschool)
-    p$country <- finder[as.character(p$idcntry)]
-    p
-  }))
-  
-  merger <- function(dat, suffix) {
-    df <- Map(function(x, y) setNames(x, namer(names(x), y, c("oID", "sID"))), dat, suffix)
-    # Function merges every element of the list
-    teach_dir <- df[grep("director|teacher", names(df), value = T)]
-    teach_dir_merge <- Reduce(function(x, y) full_join(x, y, by = c("oID", "sID")), teach_dir)
-    
-    # Function merges every element of the list
-    student2 <- df[grep("director|teacher", names(df), inv = T, value = T)]
-    student2_merge <- Reduce(function(x, y) full_join(x, y, by = c("oID", "sID")), student2)
-    
-    all <- full_join(student2_merge, teach_dir_merge, by = c("oID", "sID"))
-    
-    all
-  }
-  
-  three <- merger(data_compiled2[[1]], suffix = c("_student", "_director", "_family",
-                                                  "_lteacher", "_mteacher", "_language",
-                                                  "_math"))
-  
-  six <- merger(data_compiled2[[2]], suffix = c("_student", "_director", "_family",
-                                                "_steacher", "_lteacher", "_mteacher",
-                                                "_science", "_language", "_math"))
-  
-  all_data <- full_join(three, six)
-  
+  # Still need to recode country names
+  # p$country <- finder[as.character(p$idcntry)]
+
   setmove <- function(df, columns) {
     df[, c(columns, setdiff(names(df), columns))]
   }
   
-  all_data$sID <- all_data$idst_student
-  all_data$oID <- all_data$idsc_student
-  all_data$country <- all_data$country_student
-  all_data$dependencia <- all_data$dependencia_student
-  all_data$ruralidad <- all_data$ruralidad_student
-  all_data$genero <- all_data$genero_student
-  all_data$idgrade <- all_data$idgrade_student
-  
-  names(all_data) <- gsub("date.df", "date_df", names(all_data))
-  
-  
-  all_data2 <- setmove(all_data, c("sID",
-                                   "oID",
-                                   "country",
-                                   "dependencia",
-                                   "ruralidad",
-                                   "genero",
-                                   "idgrade"))
+  serce <- setmove(serce, c("sID",
+                            "oID",
+                            "country",
+                            "ruralidad",
+                            "genero",
+                            "idgrade"))
   
   if (save) {
     suffix <- switch(save_format[1],
@@ -222,14 +198,15 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
                      "Stata" = ".dta",
                      "SPSS" = ".sav")
     
-    output_path <- paste0(output_path, "terce", suffix)
+    output_path <- paste0(output_path, "serce", suffix)
     
-    if (save_format[1] == "csv") write_csv(all_data2, output_path)
-    if (save_format[1] == "Stata") write_dta(all_data2, output_path, stata_version)
-    if (save_format[1] == "SPSS") write_sav(all_data2, output_path)
+    if (save_format[1] == "csv") write_csv(serce, output_path)
+    if (save_format[1] == "Stata") write_dta(serce, output_path, stata_version)
+    if (save_format[1] == "SPSS") write_sav(serce, output_path)
   }
   
-  if (return_df) return(all_data2)
-  rm(list = ls()[!(ls() %in% c("all_data2"))])
-  
+  if (return_df) return(serce)
+  rm(list = ls()[!(ls() %in% c("serce"))])
 }
+
+serce <- serce(directory, save = T, save_format = "Stata")
