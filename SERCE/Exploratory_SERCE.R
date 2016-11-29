@@ -4,8 +4,11 @@
 
 # if save == T, print message saying saving as CSV
 
+library(Hmisc)
+
 directory <- "/Users/cimentadaj/Downloads/serce/SERCE/"
-serce <- function(directory, return_df = T, save = F, output_path = directory, save_format = c("csv", "Stata", "SPSS"), stata_version = 14) {
+
+serce <- function(directory, return_df = T, save = F, output_path = directory, save_format = c("csv", "Stata", "SPSS"), stata_version = 13) {
   require(tidyverse)
   require(haven)
   require(readr)
@@ -209,4 +212,4 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
   rm(list = ls()[!(ls() %in% c("serce"))])
 }
 
-serce <- serce(directory, save = T, save_format = "Stata")
+serce <- serce(directory, save = T)
