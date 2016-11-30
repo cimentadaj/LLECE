@@ -1,24 +1,30 @@
 # Add checking for a backslash as the last character of directory
-# Make sure all databases have all of their variables with the database prefix
-# excluding the three key variables for merging.
+# The Stata file that is returned does not have any labels
+# and the SERCE data file does not have any codebook
 
-# if save == T, print message saying saving as CSV
+# The problem is that the labels are pretty lengthy
+# and write_dta throws an error saying Stata does not accept
+# such long labels.
 
-library(Hmisc)
+directory <- "/Users/cimentadaj/Downloads/serce/SERCE"
 
-directory <- "/Users/cimentadaj/Downloads/serce/SERCE/"
-
-serce <- function(directory, return_df = T, save = F, output_path = directory, save_format = c("csv", "Stata", "SPSS"), stata_version = 13) {
+serce <- function(main_dir, return_df = T, save = F, output_path = directory, save_format = c("csv", "Stata", "SPSS"), stata_version = 13) {
   require(tidyverse)
   require(haven)
   require(readr)
   require(downloader)
   require(stringi)
   
+  # If the last character is a backslash, return the same directory,
+  # if not, the paste the backslash
+  directory <- ifelse(strsplit(main_dir, NULL)[[1]][nchar(directory)] != "/",
+                      paste0(main_dir, "/"),
+                      main_dir)
+  stopifnot(dir.exists(directory))
+  
+  
   unrar_fun <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/Functions/unrar.R"
   source_url(unrar_fun, sha = sha_url(unrar_fun))
-  
-  stopifnot(dir.exists(directory))
   
   # Checks which files are unzipped:
   database <- list.files(directory, pattern = ".rar")
@@ -64,7 +70,7 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
   # if the first file was unrared manually, the program assumes that
   # all other files within that file have been unrared as well.
   
-  folder <- paste0(directory, grep("_", list.files(directory), inv = T, value = T), "/")
+  folder <- paste0(directory, grep("_|.csv|.sav|.dta", list.files(directory), inv = T, value = T), "/")
   folder_names <- list.files(folder)[grep("\\.", list.files(folder), inv = T)]
   folder_path <- paste0(folder, folder_names, "/")
   
@@ -152,7 +158,7 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
     
     keys2 <- intersect(keys, names(x))
     keys3 <- intersect(keys2, names(y))
-    
+    print(keys3)
     full_join(x, y, keys3, ...)
   }
   
@@ -160,18 +166,18 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
   # merge together by a different key.
   student_3 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[1]][1:4])
   scores_3 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[1]][5:7])
-  third <- full_join(student_3, scores_3, "id_gradoaula") %>%
+  third <- full_join(student_3, scores_3, c("id_gradoaula", "llavepaiscentro")) %>%
     filter(!duplicated(id_alumno))
 
   student_6 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[2]][1:5])
   scores_6 <- Reduce(function(x, y) joiner(x, y, vars), all_data[[2]][6:9])
-  six <- full_join(student_6, scores_6, "id_gradoaula") %>%
+  six <- full_join(student_6, scores_6, c("id_gradoaula", "llavepaiscentro")) %>%
     filter(!duplicated(id_alumno))
 
   dir_school <- joiner(all_data[[3]][[1]], all_data[[3]][[2]], vars)
   
   both_grades <- full_join(third, six)
-  serce <- full_join(dir_school, both_grades, c("llavepaiscentro" = "llavepaiscentro.x")) %>%
+  serce <- full_join(dir_school, both_grades, c("llavepaiscentro" = "llavepaiscentro")) %>%
     rename(oID = llavepaiscentro,
            sID = id_alumno,
            country = pais_student,
@@ -195,6 +201,18 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
                             "genero",
                             "idgrade"))
   
+  names(serce) <- gsub("_tccsc_", "_", names(serce))
+  
+  attributer <- function(x, value_change) {
+    #attr(x, "label") <- value_change
+    #attr(x, "labels") <- value_change
+    attributes(x) <- value_change
+    
+    x
+  }
+  
+  serce[] <- lapply(serce, attributer, NULL)
+  
   if (save) {
     suffix <- switch(save_format[1],
                      "csv" = ".csv",
@@ -209,7 +227,7 @@ serce <- function(directory, return_df = T, save = F, output_path = directory, s
   }
   
   if (return_df) return(serce)
-  rm(list = ls()[!(ls() %in% c("serce"))])
+  rm(list = ls()[!(ls() %in% c("serce"))])  
 }
 
-serce <- serce(directory, save = T)
+
