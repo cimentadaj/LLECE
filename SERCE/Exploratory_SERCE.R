@@ -6,8 +6,6 @@
 # and write_dta throws an error saying Stata does not accept
 # such long labels.
 
-directory <- "/Users/cimentadaj/Downloads/serce/SERCE"
-
 serce <- function(main_dir, return_df = T, save = F, output_path = directory, save_format = c("csv", "Stata", "SPSS"), stata_version = 13) {
   require(tidyverse)
   require(haven)
