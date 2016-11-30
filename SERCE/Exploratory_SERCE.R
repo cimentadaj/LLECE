@@ -156,7 +156,6 @@ serce <- function(main_dir, return_df = T, save = F, output_path = directory, sa
     
     keys2 <- intersect(keys, names(x))
     keys3 <- intersect(keys2, names(y))
-    print(keys3)
     full_join(x, y, keys3, ...)
   }
   
