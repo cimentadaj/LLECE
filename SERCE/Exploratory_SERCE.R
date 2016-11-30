@@ -198,7 +198,7 @@ serce <- function(main_dir, return_df = T, save = F, output_path = directory, sa
                             "genero",
                             "idgrade"))
   
-  names(serce) <- gsub("_tccsc_", "_", names(serce))
+  names(serce) <- gsub("_tccsc_", "_tcc_", names(serce))
   
   attributer <- function(x, value_change) {
     #attr(x, "label") <- value_change
