@@ -15,7 +15,7 @@ serce <- function(main_dir, return_df = T, save = F, output_path = directory, sa
   
   # If the last character is a backslash, return the same directory,
   # if not, the paste the backslash
-  directory <- ifelse(strsplit(main_dir, NULL)[[1]][nchar(directory)] != "/",
+  directory <- ifelse(strsplit(main_dir, NULL)[[1]][nchar(main_dir)] != "/",
                       paste0(main_dir, "/"),
                       main_dir)
   stopifnot(dir.exists(directory))
